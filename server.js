@@ -1,20 +1,52 @@
-import express from "express";
-import mongoose from "mongoose";
-import cors from "cors";
-import dotenv from "dotenv";
-import joyasRoutes from "./routes/joyas.js";
+import express from 'express'; // Usamos import en lugar de require
+import bcrypt from 'bcryptjs';  // Usamos import en lugar de require
+import jwt from 'jsonwebtoken'; // Usamos import en lugar de require
 
-dotenv.config();
 const app = express();
-app.use(cors());
-app.use(express.json()); // parse application/json
+const port = 5000;
 
-// Conexión a MongoDB
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ Conectado a MongoDB"))
-  .catch(err => console.error("❌ Error MongoDB:", err));
+app.use(express.json()); // Middleware para parsear el cuerpo de las solicitudes como JSON
 
-app.use("/api/joyas", joyasRoutes);
+// Base de datos simulada (normalmente aquí iría tu base de datos real)
+const users = [
+  {
+    id: 1,
+    username: 'admin',
+    password: 'admin', // Contraseña "contraseñaSegura123" encriptada
+    role: 'admin',
+  },
+];
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Backend en puerto ${PORT}`));
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Por favor ingrese un usuario y una contraseña.' });
+  }
+
+  const user = users.find((u) => u.username === username);
+  if (!user) {
+    return res.status(400).json({ message: 'Credenciales incorrectas.' });
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    return res.status(400).json({ message: 'Credenciales incorrectas.' });
+  }
+
+  const token = jwt.sign(
+    { id: user.id, username: user.username, role: user.role },
+    'secretoSuperSeguro', // Tu clave secreta
+    { expiresIn: '1h' } // El token caduca en 1 hora
+  );
+
+  return res.status(200).json({
+    success: true,
+    token,
+    user: { id: user.id, username: user.username, role: user.role },
+  });
+});
+
+app.listen(port, () => {
+  console.log(`Servidor corriendo en http://localhost:${port}`);
+});
