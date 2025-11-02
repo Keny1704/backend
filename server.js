@@ -1,52 +1,43 @@
-import express from 'express'; // Usamos import en lugar de require
-import bcrypt from 'bcryptjs';  // Usamos import en lugar de require
-import jwt from 'jsonwebtoken'; // Usamos import en lugar de require
+// server.js - Sintaxis ES Modules
+import express from 'express';
+import cors from 'cors';
 
 const app = express();
-const port = 5000;
 
-app.use(express.json()); // Middleware para parsear el cuerpo de las solicitudes como JSON
+// Middleware CORS
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true
+}));
 
-// Base de datos simulada (normalmente aquí iría tu base de datos real)
-const users = [
-  {
-    id: 1,
-    username: 'admin',
-    password: 'admin', // Contraseña "contraseñaSegura123" encriptada
-    role: 'admin',
-  },
-];
+app.use(express.json());
 
-app.post('/api/login', async (req, res) => {
+// Ruta de login
+app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
-
-  if (!username || !password) {
-    return res.status(400).json({ message: 'Por favor ingrese un usuario y una contraseña.' });
+  
+  console.log('Intento de login:', username);
+  
+  // Ejemplo de autenticación - cambia esto por tu lógica real
+  if (username === 'admin' && password === 'admin') {
+    res.json({
+      success: true,
+      token: 'jwt_token_simulado',
+      user: {
+        id: 1,
+        username: username,
+        name: 'Usuario Admin'
+      }
+    });
+  } else {
+    res.status(401).json({
+      success: false,
+      message: 'Credenciales incorrectas'
+    });
   }
-
-  const user = users.find((u) => u.username === username);
-  if (!user) {
-    return res.status(400).json({ message: 'Credenciales incorrectas.' });
-  }
-
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
-    return res.status(400).json({ message: 'Credenciales incorrectas.' });
-  }
-
-  const token = jwt.sign(
-    { id: user.id, username: user.username, role: user.role },
-    'secretoSuperSeguro', // Tu clave secreta
-    { expiresIn: '1h' } // El token caduca en 1 hora
-  );
-
-  return res.status(200).json({
-    success: true,
-    token,
-    user: { id: user.id, username: user.username, role: user.role },
-  });
 });
 
-app.listen(port, () => {
-  console.log(`Servidor corriendo en http://localhost:${port}`);
+const PORT = 5000;
+app.listen(PORT, () => {
+  console.log(`Backend corriendo en http://localhost:${PORT}`);
 });
